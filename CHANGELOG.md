@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.9.0] - 2026-06-04
+
+### Added
+- Added MCP elicitation support with Pi form prompts and browser-opening URL requests.
+
 ### Fixed
 - Rejected non-http/https MCP URL elicitations before prompting or opening a browser.
 - Preserved empty string form values for MCP string elicitations unless schema constraints reject them.
