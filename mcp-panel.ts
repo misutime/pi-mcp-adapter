@@ -76,7 +76,7 @@ function fuzzyScore(query: string, text: string): number {
 
 function sanitizeDisplayText(text: string | null | undefined): string {
   return (text ?? "")
-    .replace(/(?:\x1b\][\s\S]*?(?:\x07|\x1b\\)|\x9d[\s\S]*?(?:\x07|\x9c))/g, "")
+    .replace(/(?:\x1b\][\s\S]*?(?:\x07|\x1b\\)|\x9d[\s\S]*?(?:\x07|\x1b\\|\x9c))/g, "")
     .replace(/(?:\x1b\[[0-?]*[ -/]*[@-~]|\x1b[@-Z\\-_])/g, "")
     .replace(/[\u0000-\u001f\u007f-\u009f]+/g, " ")
     .replace(/\s+/g, " ")
@@ -88,7 +88,7 @@ function sanitizeRowContent(content: string): string {
   let pendingSpace = false;
   for (let i = 0; i < content.length; i++) {
     const rest = content.slice(i);
-    const osc = rest.match(/^(?:\x1b\][\s\S]*?(?:\x07|\x1b\\)|\x9d[\s\S]*?(?:\x07|\x9c))/);
+    const osc = rest.match(/^(?:\x1b\][\s\S]*?(?:\x07|\x1b\\)|\x9d[\s\S]*?(?:\x07|\x1b\\|\x9c))/);
     if (osc) {
       i += osc[0].length - 1;
       continue;

@@ -35,7 +35,7 @@ function createCache(config: McpConfig): MetadataCache {
         tools: [
           {
             name: "search\u0007issues",
-            description: "Search\r\n\x1b[31m\x1b]8;;https://example.invalid/issues\x1b\\issues\x1b]8;;\x1b\\\x1b[0m\tby query\u0000now",
+            description: "Search\r\n\x1b[31m\x9d8;;https://example.invalid/issues\x1b\\issues\x9d8;;\x1b\\\x1b[0m\tby query\u0000now",
           },
           { name: "list_projects", description: "List projects" },
         ],
@@ -67,6 +67,7 @@ describe("mcp-panel rendering", () => {
     expect(lines.some((line) => /[\r\n\u0000-\u001f\u007f-\u009f]/.test(stripAnsi(line)))).toBe(false);
     expect(output).not.toContain("[31m");
     expect(output).not.toContain("\x1b]");
+    expect(output).not.toContain("\x9d");
     expect(output).not.toContain("https://example.invalid/issues");
     panel.dispose();
   });
