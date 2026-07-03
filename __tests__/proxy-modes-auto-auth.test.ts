@@ -324,18 +324,12 @@ describe("proxy auto auth", () => {
   it("surfaces aborted proxy tool calls via the forwarded AbortSignal", async () => {
     const { executeCall } = await import("../proxy-modes.ts");
     const controller = new AbortController();
-    controller.abort();
 
     const requestOptions = { signal: controller.signal, timeout: 1234 };
     const connection = {
       status: "connected",
       client: {
-        callTool: vi.fn(async (_params: unknown, _schema: unknown, options: { signal?: AbortSignal }) => {
-          if (options.signal?.aborted) {
-            throw new Error("request aborted");
-          }
-          return { isError: false, content: [{ type: "text", text: "ok" }] };
-        }),
+        callTool: vi.fn(() => new Promise<never>(() => {})),
       },
     };
     const manager = {
@@ -358,7 +352,11 @@ describe("proxy auto auth", () => {
       completedUiSessions: [],
     } as any;
 
-    const result = await executeCall(state, "demo_search", {}, "demo", undefined, controller.signal);
+    const inFlight = executeCall(state, "demo_search", {}, "demo", undefined, controller.signal);
+    await Promise.resolve();
+    controller.abort(new Error("request aborted"));
+
+    const result = await inFlight;
 
     expect(manager.getRequestOptions).toHaveBeenCalledWith("demo", controller.signal);
     expect(connection.client.callTool).toHaveBeenCalledWith(

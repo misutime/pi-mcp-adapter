@@ -17,6 +17,7 @@ function connectedState(client: Record<string, unknown>) {
       incrementInFlight: vi.fn(),
       decrementInFlight: vi.fn(),
       close: vi.fn(async () => undefined),
+      getRequestOptions: vi.fn((_server: string, signal?: AbortSignal) => signal ? { signal } : undefined),
     },
     toolMetadata: new Map([
       [
@@ -153,7 +154,7 @@ describe("AbortSignal propagation", () => {
 
     controller.abort(new Error("user cancelled"));
 
-    await expect((manager as any).fetchAllResources(client, controller.signal)).rejects.toThrow("user cancelled");
+    await expect((manager as any).fetchAllResources(client, { signal: controller.signal })).rejects.toThrow("user cancelled");
   });
 
   it("server-manager readResource passes AbortSignal through the MCP SDK request options", async () => {

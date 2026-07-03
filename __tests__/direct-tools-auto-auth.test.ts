@@ -105,18 +105,12 @@ describe("direct tools auto auth", () => {
   it("surfaces aborted direct tool calls via the forwarded AbortSignal", async () => {
     const { createDirectToolExecutor } = await import("../direct-tools.ts");
     const controller = new AbortController();
-    controller.abort();
 
     const requestOptions = { signal: controller.signal, timeout: 4321 };
     const connection = {
       status: "connected",
       client: {
-        callTool: vi.fn(async (_params: unknown, _schema: unknown, options: { signal?: AbortSignal }) => {
-          if (options.signal?.aborted) {
-            throw new Error("request aborted");
-          }
-          return { isError: false, content: [{ type: "text", text: "ok" }] };
-        }),
+        callTool: vi.fn(() => new Promise<never>(() => {})),
       },
     };
     const state = {
@@ -140,7 +134,11 @@ describe("direct tools auto auth", () => {
       description: "Search",
     });
 
-    const result = await executor("id", {}, controller.signal, undefined, undefined as any);
+    const inFlight = executor("id", {}, controller.signal, undefined, undefined as any);
+    await Promise.resolve();
+    controller.abort(new Error("request aborted"));
+
+    const result = await inFlight;
 
     expect(state.manager.getRequestOptions).toHaveBeenCalledWith("demo", controller.signal);
     expect(connection.client.callTool).toHaveBeenCalledWith(

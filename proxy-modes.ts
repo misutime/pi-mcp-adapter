@@ -833,7 +833,7 @@ export async function executeCall(
   }
 
   let uiSession: UiSessionRuntime | null = null;
-  const requestOptions = state.manager.getRequestOptions?.(serverName, signal);
+  const requestOptions = state.manager.getRequestOptions?.(serverName, signal) ?? (signal ? { signal } : undefined);
 
   const outputGuardOptions = resolveMcpOutputGuardOptions(state.config.settings);
 
