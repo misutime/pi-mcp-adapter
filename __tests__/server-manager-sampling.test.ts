@@ -234,6 +234,28 @@ describe("McpServerManager sampling", () => {
     expect(mocks.transports[1].options).toMatchObject({ cwd: join(homedir(), "nested") });
   });
 
+  it("uses the session cwd for stdio servers without an explicit cwd", async () => {
+    const { McpServerManager } = await import("../server-manager.ts");
+    const manager = new McpServerManager("/tmp/pi-session-cwd");
+
+    await manager.connect("session-cwd", { command: "node", args: ["server.js"] });
+
+    expect(mocks.transports[0].options).toMatchObject({ cwd: "/tmp/pi-session-cwd" });
+  });
+
+  it("prefers an explicit stdio cwd over the session cwd", async () => {
+    const { McpServerManager } = await import("../server-manager.ts");
+    const manager = new McpServerManager("/tmp/pi-session-cwd");
+
+    await manager.connect("explicit-cwd", {
+      command: "node",
+      args: ["server.js"],
+      cwd: "/tmp/server-cwd",
+    });
+
+    expect(mocks.transports[0].options).toMatchObject({ cwd: "/tmp/server-cwd" });
+  });
+
   it("applies the global timeout to connect and discovery requests", async () => {
     const { McpServerManager } = await import("../server-manager.ts");
     const manager = new McpServerManager();

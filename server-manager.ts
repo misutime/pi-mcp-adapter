@@ -52,6 +52,9 @@ export class McpServerManager {
   private acceptedUrlElicitations = new Map<string, Set<string>>();
   private defaultRequestTimeoutMs: number | undefined;
 
+  /** Default cwd for stdio servers without an explicit config `cwd`. */
+  constructor(private readonly defaultCwd?: string) {}
+
   setSamplingConfig(config: ServerSamplingConfig | undefined): void {
     this.samplingConfig = config;
   }
@@ -145,7 +148,7 @@ export class McpServerManager {
         command,
         args,
         env: resolveEnv(definition.env),
-        cwd: resolveConfigPath(definition.cwd),
+        cwd: resolveConfigPath(definition.cwd) ?? this.defaultCwd,
         stderr: definition.debug ? "inherit" : "ignore",
       });
     } else if (definition.url) {

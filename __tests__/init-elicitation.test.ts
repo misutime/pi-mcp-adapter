@@ -52,10 +52,12 @@ describe("initializeMcp elicitation config", () => {
 
   it("enables form and URL elicitation in TUI mode", async () => {
     const { initializeMcp } = await import("../init.ts");
+    const { McpServerManager } = await import("../server-manager.ts");
     const ctx = context();
 
     await initializeMcp(extensionApi(), ctx);
 
+    expect(McpServerManager).toHaveBeenCalledWith(ctx.cwd);
     expect(mocks.managers[0].setElicitationConfig).toHaveBeenCalledWith({
       ui: ctx.ui,
       allowUrl: true,
