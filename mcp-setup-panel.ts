@@ -126,7 +126,7 @@ export class McpSetupPanel {
   private getActions(): Action[] {
     const actions: Action[] = [];
     if (this.screen === "empty") {
-      actions.push({ id: "run-setup", label: "Run setup", description: "Inspect detected configs, adopt imports, and scaffold a minimal `.pi/mcp.json`." });
+      actions.push({ id: "run-setup", label: "Run setup", description: "Inspect detected configs and adopt compatibility imports into Pi-owned files." });
     }
     if (this.discovery.imports.length > 0) {
       actions.push({ id: "adopt-imports", label: "Adopt detected compatibility imports", description: `Choose which host-specific MCP configs Pi should import into its own override file. ${this.discovery.imports.length} source${this.discovery.imports.length === 1 ? "" : "s"} found.` });
@@ -137,7 +137,7 @@ export class McpSetupPanel {
       actions.push({ id: "open-paths", label: "Open detected config paths", description: "Browse the actual config files that Pi discovered on this machine." });
     }
     if (!this.discovery.repoPrompt.configured && this.discovery.repoPrompt.executablePath && this.discovery.repoPrompt.targetPath && this.discovery.repoPrompt.entry && this.discovery.repoPrompt.serverName) {
-      actions.push({ id: "add-repoprompt", label: "Add RepoPrompt to shared MCP config", description: "Write a standard MCP entry for RepoPrompt to the recommended shared target, then reload MCP in-session." });
+      actions.push({ id: "add-repoprompt", label: "Add RepoPrompt to Pi MCP config", description: "Write a standard MCP entry for RepoPrompt to a Pi-owned config file, then reload MCP in-session." });
     }
     actions.push({ id: "close", label: "Close", description: "Exit the onboarding flow." });
     return actions;
@@ -440,7 +440,7 @@ export class McpSetupPanel {
     switch (action) {
       case "run-setup":
         return this.formatPreview([
-          "Run setup to adopt host-specific imports, inspect detected paths, and scaffold a minimal `.pi/mcp.json` if needed.",
+          "Run setup to adopt host-specific imports and inspect detected config paths.",
         ]);
       case "adopt-imports":
         return this.formatWritePreview(

@@ -52,7 +52,7 @@ export async function showStatus(state: McpExtensionState, ctx: ExtensionContext
 
   if (Object.keys(state.config.mcpServers).length === 0) {
     lines.push("No MCP servers configured");
-    lines.push("Run /mcp setup to adopt imports or scaffold a starter .pi/mcp.json");
+    lines.push("Run /mcp setup to adopt compatibility imports");
   }
 
   ctx.ui.notify(lines.join("\n"), "info");

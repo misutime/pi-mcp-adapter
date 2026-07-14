@@ -122,7 +122,7 @@ async function runInit(argv, log = console.log) {
 
   if (importsToAdd.length === 0) {
     log("\nNo Pi config changes needed.");
-    log("Standard MCP configs are discovered automatically, and host-specific imports are already configured or unavailable.");
+    log("Host-specific imports are already configured or unavailable.");
     return 0;
   }
 
@@ -141,7 +141,7 @@ async function runInit(argv, log = console.log) {
 
   writePiConfig(nextConfig);
   log(`Updated ${PI_CONFIG_PATH}`);
-  log("Pi will now keep reading standard MCP configs automatically, while these imports cover host-specific config formats.");
+  log("Pi will now use these imports to read host-specific MCP config formats.");
   return 0;
 }
 

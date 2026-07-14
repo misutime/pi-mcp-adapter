@@ -72,22 +72,21 @@ describe("commands onboarding", () => {
     expect(mocks.createMcpPanel).not.toHaveBeenCalled();
   });
 
-  it("shows a one-time shared-config notice in the MCP panel", async () => {
+  it("opens the MCP panel without shared-config notice (Pi-only config model)", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-commands-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-commands-project-"));
     process.env.HOME = home;
     process.chdir(project);
 
-    writeJson(join(home, ".config", "mcp", "mcp.json"), {
+    writeJson(join(home, ".pi", "agent", "mcp.json"), {
       mcpServers: {
-        sharedServer: { command: "shared" },
+        globalServer: { command: "global" },
       },
     });
 
     const ui = createUi();
     const { loadMcpConfig } = await import("../config.ts");
     const { openMcpPanel } = await import("../commands.ts");
-    const { loadOnboardingState } = await import("../onboarding-state.ts");
 
     await openMcpPanel({
       config: loadMcpConfig(),
@@ -98,8 +97,8 @@ describe("commands onboarding", () => {
 
     expect(mocks.createMcpPanel).toHaveBeenCalled();
     const options = mocks.createMcpPanel.mock.calls[0]?.[6];
-    expect(options.noticeLines[0]).toContain("Using standard MCP config");
-    expect(loadOnboardingState().sharedConfigHintShown).toBe(true);
+    // Pi-owned configs do not trigger a shared-config notice.
+    expect(options.noticeLines).toHaveLength(0);
   });
 
   it("clears OAuth credentials, cancels pending auth, and closes the server on logout", async () => {
