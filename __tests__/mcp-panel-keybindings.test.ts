@@ -56,10 +56,8 @@ function createSetupCallbacks(): SetupPanelCallbacks {
   const preview = { path: "/tmp/x", existed: false, changed: true, beforeText: "", afterText: "", diffText: "" };
   return {
     previewImports: () => preview,
-    previewStarterProject: () => preview,
     previewRepoPrompt: () => null,
     adoptImports: async () => ({ added: [], path: "/tmp/x" }),
-    scaffoldProjectConfig: vi.fn(async () => ({ path: "/tmp/x" })),
     addRepoPrompt: async () => ({ path: "/tmp/x", serverName: "repoprompt" }),
     openPath: async () => {},
     markSetupCompleted: () => {},
@@ -175,12 +173,14 @@ describe("mcp-setup-panel custom keybindings", () => {
       () => {},
     );
 
-    // Actions for this discovery: view-example, scaffold-project, show-precedence, close.
+    // Actions for this discovery: view-example, show-precedence, close.
+    // Ctrl+N moves from view-example to show-precedence, Enter shows preview (no side effect).
     panel.handleInput(CTRL_N);
     panel.handleInput(ENTER);
     await Promise.resolve();
-    await Promise.resolve();
-    expect(callbacks.scaffoldProjectConfig).toHaveBeenCalledTimes(1);
+    // Move to close and dismiss.
+    panel.handleInput(CTRL_N);
+    panel.handleInput(ENTER);
     panel.dispose();
   });
 });

@@ -5,8 +5,6 @@ import { dirname, join, resolve } from "node:path";
 import { getAgentPath } from "./agent-dir.ts";
 import type { McpConfig, ServerEntry, McpSettings, ImportKind, ServerProvenance } from "./types.ts";
 
-const GENERIC_GLOBAL_CONFIG_PATH = join(homedir(), ".config", "mcp", "mcp.json");
-const PROJECT_CONFIG_NAME = ".mcp.json";
 const PROJECT_PI_CONFIG_NAME = ".pi/mcp.json";
 const REPOPROMPT_BINARY_CANDIDATES = [
   join(homedir(), "RepoPrompt", "repoprompt_cli"),
@@ -27,7 +25,7 @@ const IMPORT_PATHS: Record<ImportKind, string[]> = {
 };
 
 interface ConfigSourceSpec {
-  id: "shared-global" | "pi-global" | "shared-project" | "pi-project";
+  id: "pi-global" | "pi-project";
   label: string;
   readPath: string;
   writePath: string;
@@ -91,14 +89,6 @@ export interface ConfigWritePreview {
 
 export function getPiGlobalConfigPath(overridePath?: string): string {
   return overridePath ? resolve(overridePath) : getAgentPath("mcp.json");
-}
-
-export function getGenericGlobalConfigPath(): string {
-  return GENERIC_GLOBAL_CONFIG_PATH;
-}
-
-export function getProjectConfigPath(cwd = process.cwd()): string {
-  return resolve(cwd, PROJECT_CONFIG_NAME);
 }
 
 export function getProjectPiConfigPath(cwd = process.cwd()): string {
@@ -194,26 +184,12 @@ export function loadMcpConfig(overridePath?: string, cwd = process.cwd()): McpCo
 
 function getConfigSources(overridePath?: string, cwd = process.cwd()): ConfigSourceSpec[] {
   const userPath = getPiGlobalConfigPath(overridePath);
-  const projectPath = getProjectConfigPath(cwd);
   const projectPiPath = getProjectPiConfigPath(cwd);
   const sources: ConfigSourceSpec[] = [];
 
-  if (GENERIC_GLOBAL_CONFIG_PATH !== userPath) {
-    sources.push({
-      id: "shared-global",
-      label: "user-global standard MCP",
-      readPath: GENERIC_GLOBAL_CONFIG_PATH,
-      writePath: userPath,
-      kind: "import",
-      importKind: "global MCP config",
-      shared: true,
-      scope: "global",
-    });
-  }
-
   sources.push({
     id: "pi-global",
-    label: "Pi global override",
+    label: "Pi global",
     readPath: userPath,
     writePath: userPath,
     kind: "user",
@@ -221,22 +197,10 @@ function getConfigSources(overridePath?: string, cwd = process.cwd()): ConfigSou
     scope: "global",
   });
 
-  if (projectPath !== userPath) {
-    sources.push({
-      id: "shared-project",
-      label: "project standard MCP",
-      readPath: projectPath,
-      writePath: projectPath,
-      kind: "project",
-      shared: true,
-      scope: "project",
-    });
-  }
-
-  if (projectPiPath !== userPath && projectPiPath !== projectPath) {
+  if (projectPiPath !== userPath) {
     sources.push({
       id: "pi-project",
-      label: "project Pi override",
+      label: "Pi project",
       readPath: projectPiPath,
       writePath: projectPiPath,
       kind: "project",
@@ -490,7 +454,6 @@ function findProjectRoot(cwd = process.cwd()): string | null {
     if (
       existsSync(join(current, ".git"))
       || existsSync(join(current, "package.json"))
-      || existsSync(join(current, PROJECT_CONFIG_NAME))
       || existsSync(join(current, ".pi"))
     ) {
       return current;
@@ -512,7 +475,7 @@ function buildRepoPromptEntry(executablePath: string): ServerEntry {
 
 function detectRepoPrompt(summary: Omit<McpDiscoverySummary, "fingerprint" | "repoPrompt">, cwd = process.cwd()): RepoPromptDiscovery {
   for (const source of summary.sources) {
-    if (source.kind !== "shared" || source.serverCount === 0) continue;
+    if (source.serverCount === 0) continue;
     const config = readValidatedConfig(source.path, `MCP config from ${source.path}`);
     if (!config) continue;
     for (const [name, entry] of Object.entries(config.mcpServers)) {
@@ -528,7 +491,7 @@ function detectRepoPrompt(summary: Omit<McpDiscoverySummary, "fingerprint" | "re
   }
 
   const projectRoot = findProjectRoot(cwd);
-  const targetPath = projectRoot ? join(projectRoot, PROJECT_CONFIG_NAME) : GENERIC_GLOBAL_CONFIG_PATH;
+  const targetPath = projectRoot ? join(projectRoot, PROJECT_PI_CONFIG_NAME) : getPiGlobalConfigPath();
   return {
     configured: false,
     executablePath,
@@ -563,25 +526,6 @@ export function ensureCompatibilityImports(importKinds: ImportKind[], overridePa
   setServersObject(raw, servers);
   writeRawConfigObject(targetPath, raw);
   return { path: targetPath, added };
-}
-
-export function buildStarterProjectConfig(): McpConfig {
-  return {
-    mcpServers: {},
-  };
-}
-
-export function previewStarterProjectConfig(cwd = process.cwd()): ConfigWritePreview {
-  const targetPath = getProjectConfigPath(cwd);
-  const nextRaw = { mcpServers: buildStarterProjectConfig().mcpServers };
-  return buildConfigWritePreview(targetPath, nextRaw);
-}
-
-export function writeStarterProjectConfig(cwd = process.cwd()): string {
-  const targetPath = getProjectConfigPath(cwd);
-  const raw = { mcpServers: buildStarterProjectConfig().mcpServers };
-  writeRawConfigObject(targetPath, raw);
-  return targetPath;
 }
 
 export function previewSharedServerEntry(filePath: string, serverName: string, entry: ServerEntry): ConfigWritePreview {

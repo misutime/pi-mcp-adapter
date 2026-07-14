@@ -7,10 +7,8 @@ import {
   getServerProvenance,
   previewCompatibilityImports,
   previewSharedServerEntry,
-  previewStarterProjectConfig,
   writeDirectToolsConfig,
   writeSharedServerEntry,
-  writeStarterProjectConfig,
 } from "./config.ts";
 import { lazyConnect, updateMetadataCache, updateStatusBar, getFailureAgeSeconds } from "./init.ts";
 import { loadMetadataCache } from "./metadata-cache.ts";
@@ -54,7 +52,7 @@ export async function showStatus(state: McpExtensionState, ctx: ExtensionContext
 
   if (Object.keys(state.config.mcpServers).length === 0) {
     lines.push("No MCP servers configured");
-    lines.push("Run /mcp setup to adopt imports or scaffold a starter .mcp.json");
+    lines.push("Run /mcp setup to adopt imports or scaffold a starter .pi/mcp.json");
   }
 
   ctx.ui.notify(lines.join("\n"), "info");
@@ -259,7 +257,6 @@ export async function openMcpSetup(
 
   const callbacks = {
     previewImports: (imports: ImportKind[]) => previewCompatibilityImports(imports, configOverridePath),
-    previewStarterProject: () => previewStarterProjectConfig(ctx.cwd),
     previewRepoPrompt: () => {
       const repoPrompt = getMcpDiscoverySummary(configOverridePath, ctx.cwd).repoPrompt;
       if (!repoPrompt.entry || !repoPrompt.targetPath || !repoPrompt.serverName) return null;
@@ -269,11 +266,6 @@ export async function openMcpSetup(
       const result = ensureCompatibilityImports(imports, configOverridePath);
       if (result.added.length > 0) configChanged = true;
       return result;
-    },
-    scaffoldProjectConfig: async () => {
-      const path = writeStarterProjectConfig(ctx.cwd);
-      configChanged = true;
-      return { path };
     },
     addRepoPrompt: async () => {
       const repoPrompt = getMcpDiscoverySummary(configOverridePath, ctx.cwd).repoPrompt;

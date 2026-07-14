@@ -48,10 +48,8 @@ function wrapText(text: string, width: number): string[] {
 
 export interface SetupPanelCallbacks {
   previewImports: (imports: ImportKind[]) => ConfigWritePreview;
-  previewStarterProject: () => ConfigWritePreview;
   previewRepoPrompt: () => ConfigWritePreview | null;
   adoptImports: (imports: ImportKind[]) => Promise<{ added: ImportKind[]; path: string }>;
-  scaffoldProjectConfig: () => Promise<{ path: string }>;
   addRepoPrompt: () => Promise<{ path: string; serverName: string }>;
   openPath: (path: string) => Promise<void>;
   markSetupCompleted: () => void;
@@ -72,7 +70,6 @@ type ActionId =
   | "show-precedence"
   | "open-paths"
   | "add-repoprompt"
-  | "scaffold-project"
   | "close";
 
 interface Action {
@@ -129,15 +126,12 @@ export class McpSetupPanel {
   private getActions(): Action[] {
     const actions: Action[] = [];
     if (this.screen === "empty") {
-      actions.push({ id: "run-setup", label: "Run setup", description: "Inspect detected configs, adopt imports, and scaffold a minimal `.mcp.json`." });
+      actions.push({ id: "run-setup", label: "Run setup", description: "Inspect detected configs, adopt imports, and scaffold a minimal `.pi/mcp.json`." });
     }
     if (this.discovery.imports.length > 0) {
       actions.push({ id: "adopt-imports", label: "Adopt detected compatibility imports", description: `Choose which host-specific MCP configs Pi should import into its own override file. ${this.discovery.imports.length} source${this.discovery.imports.length === 1 ? "" : "s"} found.` });
     }
-    actions.push({ id: "view-example", label: "View example `.mcp.json`", description: "Preview a working shared MCP config you can paste or adapt." });
-    if (!this.discovery.sources.some((source) => source.id === "shared-project" && source.exists)) {
-      actions.push({ id: "scaffold-project", label: "Scaffold project `.mcp.json`", description: "Write a minimal project config using the standard shared MCP file path, then reload Pi." });
-    }
+    actions.push({ id: "view-example", label: "View example config", description: "Preview a working MCP config you can paste or adapt." });
     actions.push({ id: "show-precedence", label: "Explain config precedence", description: "Show the read order and where Pi writes compatibility settings." });
     if (this.getDetectedPaths().length > 0) {
       actions.push({ id: "open-paths", label: "Open detected config paths", description: "Browse the actual config files that Pi discovered on this machine." });
@@ -278,14 +272,6 @@ export class McpSetupPanel {
       this.screen = "paths";
       this.pathCursor = 0;
       this.tui.requestRender();
-      return;
-    }
-    if (action === "scaffold-project") {
-      await this.runBusy(async () => {
-        const result = await this.callbacks.scaffoldProjectConfig();
-        this.callbacks.markSetupCompleted();
-        this.notice = { text: `Wrote starter config to ${result.path}. Pi will reload after this panel closes.`, tone: "success" };
-      });
       return;
     }
     if (action === "add-repoprompt") {
@@ -436,26 +422,25 @@ export class McpSetupPanel {
       return fg(this.t.warning, "Pi found MCP-related setup options, but none are active in Pi yet.");
     }
 
-    const shared = this.discovery.sources.filter((source) => source.kind === "shared" && source.serverCount > 0).length;
     const piOwned = this.discovery.sources.filter((source) => source.kind === "pi" && source.serverCount > 0).length;
-    return fg(this.t.hint, `Detected ${this.discovery.totalServerCount} configured servers across ${shared} shared and ${piOwned} Pi-owned source${shared + piOwned === 1 ? "" : "s"}.`);
+    return fg(this.t.hint, `Detected ${this.discovery.totalServerCount} configured servers across ${piOwned} Pi-owned source${piOwned === 1 ? "" : "s"}.`);
   }
 
   private secondarySummaryLine(): string {
     if (!this.discovery.hasAnyConfig) {
-      return "Create a shared `.mcp.json`, adopt host imports, or quick-add RepoPrompt from this screen.";
+      return "Create a `.pi/mcp.json`, adopt host imports, or quick-add RepoPrompt from this screen.";
     }
     if (this.discovery.totalServerCount === 0 && this.discovery.imports.length > 0) {
       return `Detected ${this.discovery.imports.length} compatibility import source${this.discovery.imports.length === 1 ? "" : "s"}. Adopt them into Pi or inspect the underlying files.`;
     }
-    return "Shared MCP files are preferred. Pi-owned files are only for compatibility imports and adapter-specific overrides.";
+    return "Pi-owned files are used for MCP server config and compatibility imports.";
   }
 
   private getActionPreview(action: ActionId): string[] {
     switch (action) {
       case "run-setup":
         return this.formatPreview([
-          "Run setup to adopt host-specific imports, inspect detected paths, and scaffold a minimal `.mcp.json` if needed.",
+          "Run setup to adopt host-specific imports, inspect detected paths, and scaffold a minimal `.pi/mcp.json` if needed.",
         ]);
       case "adopt-imports":
         return this.formatWritePreview(
@@ -468,7 +453,7 @@ export class McpSetupPanel {
         );
       case "view-example":
         return this.formatPreview([
-          "Example shared `.mcp.json`:",
+          "Example `.pi/mcp.json`:",
           "{",
           '  "mcpServers": {',
           '    "chrome-devtools": {',
@@ -477,16 +462,12 @@ export class McpSetupPanel {
           "    }",
           "  }",
           "}",
-          "",
-          "Use Scaffold project `.mcp.json` when you want a safe empty shell instead of a live example server.",
         ]);
       case "show-precedence":
         return this.formatPreview([
           "Read order:",
-          "1. ~/.config/mcp/mcp.json",
-          "2. <Pi agent dir>/mcp.json",
-          "3. .mcp.json",
-          "4. .pi/mcp.json",
+          "1. <Pi agent dir>/mcp.json",
+          "2. .pi/mcp.json",
           "Pi writes compatibility imports and adapter-only overrides to Pi-owned files.",
         ]);
       case "open-paths":
@@ -509,15 +490,6 @@ export class McpSetupPanel {
           ],
         );
       }
-      case "scaffold-project":
-        return this.formatWritePreview(
-          "Starter project `.mcp.json` write preview",
-          this.callbacks.previewStarterProject(),
-          [
-            "This writes a minimal `.mcp.json` in the current project using the shared MCP layout.",
-            "It intentionally avoids adding a fake placeholder server that would fail on first reload.",
-          ],
-        );
       case "close":
       default:
         return this.formatPreview(["Close the setup flow."]);

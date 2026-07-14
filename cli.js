@@ -17,8 +17,6 @@ const AGENT_DIR = process.env.PI_CODING_AGENT_DIR?.trim()
   ? expandHome(process.env.PI_CODING_AGENT_DIR.trim())
   : path.join(HOME, ".pi", "agent");
 const PI_CONFIG_PATH = path.join(AGENT_DIR, "mcp.json");
-const GENERIC_GLOBAL_CONFIG_PATH = path.join(HOME, ".config", "mcp", "mcp.json");
-const PROJECT_CONFIG_PATH = path.resolve(process.cwd(), ".mcp.json");
 const PROJECT_PI_CONFIG_PATH = path.resolve(process.cwd(), ".pi", "mcp.json");
 
 const IMPORT_PATHS = {
@@ -86,10 +84,8 @@ function printDiscovery(log, imports) {
   log("Config discovery:\n");
 
   const paths = [
-    ["User-global standard MCP", GENERIC_GLOBAL_CONFIG_PATH],
-    ["Pi global override", PI_CONFIG_PATH],
-    ["Project standard MCP", PROJECT_CONFIG_PATH],
-    ["Project Pi override", PROJECT_PI_CONFIG_PATH],
+    ["Pi global", PI_CONFIG_PATH],
+    ["Pi project", PROJECT_PI_CONFIG_PATH],
   ];
 
   for (const [label, filePath] of paths) {
