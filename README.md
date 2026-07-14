@@ -26,19 +26,26 @@ Restart Pi after installation.
 
 ## What happens on first run
 
-The adapter reads standard MCP files automatically. No extra setup needed if you already have them.
+The adapter reads Pi MCP config files. No extra setup needed if you already have them.
 
 | You already have... | What happens |
 |---------------------|--------------|
-| `.mcp.json` or `~/.config/mcp/mcp.json` | Pi uses it immediately. The first time you open `/mcp`, you'll see a short heads-up explaining which file Pi detected and that Pi only writes adapter-specific overrides to its own files. |
-| Host-specific configs (Cursor, Claude Code, Codex, etc.) but no standard MCP files | Run `/mcp setup` to adopt those host configs into Pi. The setup flow shows exactly what it found, lets you pick which ones to import, and previews the exact file changes before writing. |
-| Nothing configured yet | Run `/mcp setup` to scaffold a minimal `.mcp.json`, quick-add RepoPrompt, or inspect what the adapter discovered on your machine. |
+| `<Pi agent dir>/mcp.json` or `.pi/mcp.json` | Pi uses it immediately. |
+| Host-specific configs (Cursor, Claude Code, Codex, etc.) | Run `/mcp setup` to adopt those host configs into Pi. The setup flow shows exactly what it found, lets you pick which ones to import, and previews the exact file changes before writing. |
+| Nothing configured yet | Run `/mcp setup` to adopt host configs, quick-add RepoPrompt, or inspect what the adapter discovered on your machine. |
 
 If you prefer the terminal, you can also run `pi-mcp-adapter init` after install to scan for host-specific configs and add missing compatibility imports to the Pi agent dir (`~/.pi/agent/mcp.json` by default, or `$PI_CODING_AGENT_DIR/mcp.json` when set).
 
 ## Quick Start
 
-Preferred project config: `.mcp.json`
+Pi MCP config files:
+
+- `<Pi agent dir>/mcp.json` — Pi global config (`~/.pi/agent/mcp.json` by default)
+- `.pi/mcp.json` — Pi project config
+
+Precedence: project `.pi/mcp.json` overrides global `<Pi agent dir>/mcp.json`.
+
+Example project config:
 
 ```json
 {
@@ -50,20 +57,6 @@ Preferred project config: `.mcp.json`
   }
 }
 ```
-
-Preferred user-global shared config: `~/.config/mcp/mcp.json`
-
-Pi also reads Pi-owned override files for settings and host-specific compatibility:
-
-- `<Pi agent dir>/mcp.json` — Pi global override (`~/.pi/agent/mcp.json` by default)
-- `.pi/mcp.json` — Pi project override
-
-Precedence is:
-
-1. `~/.config/mcp/mcp.json`
-2. `<Pi agent dir>/mcp.json`
-3. `.mcp.json`
-4. `.pi/mcp.json`
 
 Servers are **lazy by default** — they won't connect until you actually call one of their tools. The adapter caches tool metadata so search and describe work without live connections.
 
@@ -90,16 +83,12 @@ Two calls instead of 26 tools cluttering the context.
 
 ### File Layout
 
-Use the shared MCP files when you want one setup to work across hosts, and Pi-owned files when you need Pi-specific overrides or settings.
-
 | File | Purpose |
 |------|---------|
-| `~/.config/mcp/mcp.json` | User-global shared MCP config |
-| `.mcp.json` | Project-local shared MCP config |
-| `<Pi agent dir>/mcp.json` | Pi global override and compatibility imports (`~/.pi/agent/mcp.json` by default) |
-| `.pi/mcp.json` | Pi project override |
+| `<Pi agent dir>/mcp.json` | Pi global config and compatibility imports (`~/.pi/agent/mcp.json` by default) |
+| `.pi/mcp.json` | Pi project config |
 
-Pi-specific files are the write targets for imported or shared global servers when Pi needs to persist adapter-only settings such as `directTools`.
+Pi config files are the write targets for adapter-only settings such as `directTools` and compatibility imports.
 
 In the configuration examples below, `30000` is illustrative only. If `requestTimeoutMs` is omitted or set to `<= 0`, the MCP SDK default timeout is used.
 
@@ -300,7 +289,7 @@ When you change direct-tool toggles in `/mcp` or write new config through `/mcp 
 
 **Interactive configuration:** Run `/mcp` to open an interactive panel showing all servers with connection status, tools, and direct/proxy toggles. You can reconnect servers and toggle tools between direct and proxy from the same overlay. For OAuth, press Enter on a server that needs auth or `ctrl+a` on any OAuth server.
 
-**Guided first-run setup:** Run `/mcp setup` to inspect detected shared MCP files, adopt compatibility imports from other hosts, open discovered config paths, preview exact before/after file diffs for writes, scaffold a minimal project `.mcp.json`, or quick-add RepoPrompt into a standard/shared MCP file.
+**Guided first-run setup:** Run `/mcp setup` to inspect detected Pi config files, adopt compatibility imports from other hosts, open discovered config paths, preview exact before/after file diffs for writes, or quick-add RepoPrompt into a Pi config file.
 
 **Subagent integration:** If you use the subagent extension, agents can request direct MCP tools in their frontmatter with `mcp:server-name` syntax. See the subagent README for details.
 
@@ -365,7 +354,7 @@ Restart pi, then ask the agent to show a chart — it calls `show_chart` and ope
 
 ### Import Existing Configs
 
-Shared MCP files are loaded automatically. Use `imports` only for host-specific config formats that are not already covered by `.mcp.json` or `~/.config/mcp/mcp.json`.
+Use `imports` to read host-specific MCP config formats into Pi.
 
 ```json
 {
@@ -380,7 +369,7 @@ Supported compatibility imports: `cursor`, `claude-code`, `claude-desktop`, `vsc
 
 ### Project Config
 
-Prefer `.mcp.json` for project-local shared MCP config. Use `.pi/mcp.json` only when you need a Pi-specific project override. Project files override both user-global shared MCP config and Pi global overrides.
+Use `.pi/mcp.json` for project-local MCP config. Project config overrides the global Pi config in `<Pi agent dir>/mcp.json`.
 
 ## Usage
 
@@ -407,7 +396,7 @@ Tool names are fuzzy-matched on hyphens and underscores — `context7_resolve_li
 | Command | What it does |
 |---------|--------------|
 | `/mcp` | Interactive panel and first-run onboarding surface |
-| `/mcp setup` | Guided setup for imports, a minimal `.mcp.json`, RepoPrompt quick-add, and config-path inspection |
+| `/mcp setup` | Guided setup for imports, RepoPrompt quick-add, and config-path inspection |
 | `/mcp tools` | List all tools |
 | `/mcp reconnect` | Reconnect all servers |
 | `/mcp reconnect <server>` | Connect or reconnect a single server |

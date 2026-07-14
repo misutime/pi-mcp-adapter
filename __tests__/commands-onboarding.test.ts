@@ -21,13 +21,20 @@ vi.mock("../mcp-setup-panel.ts", () => ({
   createMcpSetupPanel: mocks.createMcpSetupPanel,
 }));
 
+function setHome(dir: string): void {
+  process.env.HOME = dir;
+  process.env.USERPROFILE = dir;
+}
+
 describe("commands onboarding", () => {
   const originalHome = process.env.HOME;
+  const originalUserProfile = process.env.USERPROFILE;
   const originalOAuthDir = process.env.MCP_OAUTH_DIR;
   const originalCwd = process.cwd();
 
   beforeEach(() => {
     vi.resetModules();
+    delete process.env.PI_CODING_AGENT_DIR;
     mocks.createMcpPanel.mockReset().mockImplementation((_config, _cache, _prov, _callbacks, _tui, done) => {
       done({ cancelled: true, changes: new Map() });
       return { dispose() {} };
@@ -40,6 +47,11 @@ describe("commands onboarding", () => {
 
   afterEach(() => {
     process.env.HOME = originalHome;
+    if (originalUserProfile === undefined) {
+      delete process.env.USERPROFILE;
+    } else {
+      process.env.USERPROFILE = originalUserProfile;
+    }
     if (originalOAuthDir === undefined) {
       delete process.env.MCP_OAUTH_DIR;
     } else {
@@ -57,7 +69,7 @@ describe("commands onboarding", () => {
   }
 
   it("opens setup mode when no MCP servers are configured", async () => {
-    process.env.HOME = mkdtempSync(join(tmpdir(), "pi-mcp-commands-home-"));
+    setHome(mkdtempSync(join(tmpdir(), "pi-mcp-commands-home-")));
     const ui = createUi();
     const { openMcpPanel } = await import("../commands.ts");
 
@@ -75,7 +87,7 @@ describe("commands onboarding", () => {
   it("opens the MCP panel without shared-config notice (Pi-only config model)", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-commands-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-commands-project-"));
-    process.env.HOME = home;
+    setHome(home);
     process.chdir(project);
 
     writeJson(join(home, ".pi", "agent", "mcp.json"), {
