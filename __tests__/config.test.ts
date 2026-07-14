@@ -8,23 +8,41 @@ function writeJson(path: string, value: unknown): void {
   writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`, "utf-8");
 }
 
+function setHome(dir: string): void {
+  process.env.HOME = dir;
+  process.env.USERPROFILE = dir;
+}
+
 describe("config discovery", () => {
   const originalHome = process.env.HOME;
+  const originalUserProfile = process.env.USERPROFILE;
+  const originalAgentDir = process.env.PI_CODING_AGENT_DIR;
   const originalCwd = process.cwd();
 
   beforeEach(() => {
     vi.resetModules();
+    delete process.env.PI_CODING_AGENT_DIR;
   });
 
   afterEach(() => {
     process.env.HOME = originalHome;
+    if (originalUserProfile === undefined) {
+      delete process.env.USERPROFILE;
+    } else {
+      process.env.USERPROFILE = originalUserProfile;
+    }
+    if (originalAgentDir === undefined) {
+      delete process.env.PI_CODING_AGENT_DIR;
+    } else {
+      process.env.PI_CODING_AGENT_DIR = originalAgentDir;
+    }
     process.chdir(originalCwd);
   });
 
   it("loads Pi global config first, then Pi project overrides", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-config-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-config-project-"));
-    process.env.HOME = home;
+    setHome(home);
     process.chdir(project);
 
     writeJson(join(home, ".pi", "agent", "mcp.json"), {
@@ -59,7 +77,7 @@ describe("config discovery", () => {
   it("prefers modern Claude Code config detection over legacy paths", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-import-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-import-project-"));
-    process.env.HOME = home;
+    setHome(home);
     process.chdir(project);
     const realProject = realpathSync(project);
 
@@ -81,7 +99,7 @@ describe("config discovery", () => {
   it("merges partial Pi overrides into imported server definitions", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-merge-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-merge-project-"));
-    process.env.HOME = home;
+    setHome(home);
     process.chdir(project);
 
     writeJson(join(home, ".cursor", "mcp.json"), {
@@ -123,7 +141,7 @@ describe("config discovery", () => {
   it("tracks provenance for pi-global and pi-project configs", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-provenance-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-provenance-project-"));
-    process.env.HOME = home;
+    setHome(home);
     process.chdir(project);
     const realProject = realpathSync(project);
 
@@ -170,7 +188,7 @@ describe("config discovery", () => {
   it("summarizes discovery and detects RepoPrompt suggestions", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-summary-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-summary-project-"));
-    process.env.HOME = home;
+    setHome(home);
     process.chdir(project);
     const realProject = realpathSync(project);
 
@@ -208,7 +226,7 @@ describe("config discovery", () => {
   it("writes direct tools configs to the correct Pi-owned files", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-write-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-write-project-"));
-    process.env.HOME = home;
+    setHome(home);
     process.chdir(project);
 
     writeJson(join(home, ".pi", "agent", "mcp.json"), {
@@ -246,7 +264,7 @@ describe("config discovery", () => {
   it("builds real diff previews for compatibility imports", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-preview-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-preview-project-"));
-    process.env.HOME = home;
+    setHome(home);
     process.chdir(project);
 
     writeJson(join(home, ".pi", "agent", "mcp.json"), {
@@ -259,7 +277,7 @@ describe("config discovery", () => {
     const { previewCompatibilityImports } = await import("../config.ts");
 
     const importsPreview = previewCompatibilityImports(["cursor", "codex"]);
-    expect(importsPreview.path).toContain(".pi/agent/mcp.json");
+    expect(importsPreview.path).toMatch(/\.pi[/\\]agent[/\\]mcp\.json$/);
     expect(importsPreview.changed).toBe(true);
     expect(importsPreview.diffText).toContain("+++ after");
     expect(importsPreview.diffText).toContain('+     "codex"');
@@ -268,7 +286,7 @@ describe("config discovery", () => {
   it("writes selected compatibility imports to Pi config", async () => {
     const home = mkdtempSync(join(tmpdir(), "pi-mcp-setup-home-"));
     const project = mkdtempSync(join(tmpdir(), "pi-mcp-setup-project-"));
-    process.env.HOME = home;
+    setHome(home);
     process.chdir(project);
 
     const { ensureCompatibilityImports, getPiGlobalConfigPath } = await import("../config.ts");
